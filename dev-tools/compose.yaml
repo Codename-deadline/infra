@@ -1,0 +1,90 @@
+name: deadlines-dev
+services:
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+  postgres:
+    image: postgres:18.4-alpine
+    restart: unless-stopped
+    user: postgres
+    volumes:
+      - db_data:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: ${DB_DB}
+      POSTGRES_PASSWORD: ${DB_PWD}
+      POSTGRES_USER: ${DB_USER}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      start_period: 5s
+      interval: 60s
+      timeout: 3s
+      retries: 5
+  garage:
+    image: dxflrs/garage:v2.3.0
+    restart: always
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+      GARAGE_METRICS_TOKEN: ${GARAGE_METRICS_TOKEN}
+    volumes:
+      - ../configs/garage.toml:/etc/garage.toml:ro,Z
+      - garage_metadata:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    ports:
+      - "3900:3900"
+      - "3901:3901"
+      - "3902:3902"
+      - "3903:3903"
+  kafka:
+    image: apache/kafka:4.3.1
+    restart: unless-stopped
+    environment:
+      KAFKA_KRAFT_MODE: "true"
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"
+      KAFKA_LISTENERS: CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: /opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server localhost:9092 || exit 1
+      start_period: 5s
+      interval: 60s
+      timeout: 10s
+      retries: 5
+  helper:
+    profiles:
+      - setup
+    image: deadlines-setup
+    build: ../helper
+    volumes:
+      - ../configs:/setup/configs:ro,Z
+      - ../common/.env-template:/setup/.env-template:ro,Z
+      - ../generated:/setup/generated:rw,z
+
+volumes:
+  db_data:
+  kafka_data:
+  redis_data:
+  garage_metadata:
+  garage_data:

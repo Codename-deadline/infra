@@ -1,0 +1,18 @@
+project_name: "deadlines"
+containers:
+  kafka: "kafka"
+  redis: "redis"
+  object_storage: "garage"
+  db: "postgres"
+kafka:
+  topics:
+    - name: "private.integration.notifications"
+    - name: "private.integration.accountlinkage"
+    - name: "private.auth.otp"
+garage:
+  admin_port: 3903
+  layout:
+    dev: "dev"
+    prod: "prod"
+  bucket: "deadlines-attachments"
+  app_key_name: "deadlines-api"

@@ -1,0 +1,9 @@
+.venv
+.idea
+.ruff_cache
+__pycache__
+
+.env
+.env-prod
+generated
+sql

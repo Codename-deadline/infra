@@ -1,0 +1,14 @@
+.venv
+.ruff_cache
+
+.idea
+__pycache__
+
+sql
+
+generated/.env*
+.env
+.env-prod
+
+config-dev.yaml
+config-prod.yaml

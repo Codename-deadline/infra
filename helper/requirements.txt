@@ -1,0 +1,10 @@
+asyncpg==0.31.0
+garage_admin_sdk @ git+https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python@709b9c1317e68b9f4ea5025ef8fa9df0d2ce899c
+kafka-python==3.0.7
+
+pydantic==2.13.4
+pydantic-settings==2.13.1
+pyyaml==6.0.3
+
+typer==0.26.8
+python-dotenv==1.2.2

@@ -1,0 +1,10 @@
+import '../common/common.just'
+
+# First app deploymen
+[group('deployment')]
+initial-deploy: rebuild-helper
+    @just generate-env -e prod
+    @docker compose --env-file {{ dotenv-prod }} up kafka garage -d --wait
+    @just _run-task -t pre-init -e prod
+    @docker compose --env-file {{ dotenv-prod }} up -d --wait
+    @just _run-task -t post-init -e prod

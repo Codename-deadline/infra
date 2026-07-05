@@ -1,0 +1,88 @@
+import '../common/common.just'
+
+# Starts required docker containers
+[group('environment')]
+run-env: generate-env
+    @echo "Starting docker containers..."
+    docker compose --env-file {{ dotenv-dev }} up -d --wait
+
+# Stops required docker containers
+[group('environment')]
+stop-env:
+    @echo "Stoping docker containers..."
+    docker compose down
+
+# Starts application services
+[group('application')]
+run-app:
+    tmux kill-session -t {{ project }} 2>/dev/null || true
+
+    @echo "Starting all services in tmux..."
+    tmux new-session -d -s {{ project }} -n backend
+    tmux send-keys -t {{ project }}:backend 'cd {{ base-project-dir }}/api && ./gradlew bootRun' C-m
+
+    tmux new-window -t {{ project }} -n frontend
+    tmux send-keys -t {{ project }}:frontend 'cd {{ base-project-dir }}/frontend && bun dev' C-m
+
+    tmux new-window -t {{ project }} -n bots
+    tmux send-keys -t {{ project }}:bots 'cd {{ base-project-dir }}/bots && PLATFORM=telegram ./run.sh' C-m
+
+    @echo "Services running in tmux project '{{ project }}'"
+
+# Stops both env and application
+[group('application')]
+stop-app:
+    -tmux kill-session -t {{ project }}
+    @just stop-env
+    @echo "All services stopped."
+
+# Handles initial setup for the first app run
+[group('application')]
+first-run: generate-env stop-app rebuild-helper run-env
+    @just _run-task -t pre-init -e dev
+    just run-app
+
+    @echo "Waiting for api to become healthy..."
+    @attempt=1;
+    @for attempt in $(seq 1 20); do \
+        if curl -fsS http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then \
+            echo "Api is healthy."; \
+            break; \
+        fi; \
+        if [ $attempt -eq 20 ]; then \
+            echo "Api did not become healthy in time."; \
+            exit 1; \
+        fi; \
+        sleep 4; \
+    done
+    @just _run-task -t post-init -e dev
+
+# Attaches to the tmux session
+[group('application')]
+attach:
+    tmux attach -t {{ project }}
+
+# Clones all repositories from github
+[arg("j", short="j")]
+[group('setup')]
+clone j='1':
+    @echo "Cloning api repo..."
+    @cd {{ base-project-dir }} && git clone --recurse-submodules -j {{ j }} git@github.com:Codename-deadline/api.git
+    @echo "Cloning bots repo..."
+    @cd {{ base-project-dir }} && git clone --recurse-submodules -j {{ j }} git@github.com:Codename-deadline/bots.git
+    @echo "Cloning frontend repo..."
+    @cd {{ base-project-dir }} && git clone --recurse-submodules -j {{ j }} git@github.com:Codename-deadline/frontend.git
+
+# Clones all repositories and installs deps
+[group('setup')]
+setup-project: clone
+    @echo "Downloading frontend dependencies..."
+    @cd {{ base-project-dir }}/frontend && bun install --frozen-lockfile
+
+    @echo "Downloading bots dependencies..."
+    @cd {{ base-project-dir }}/bots && python3 -m venv .venv && source .venv/bin/activate && \
+        pip install --upgrade pip && \
+        pip install -U -r common/requirements.txt -r common/requirements-dev.txt -r telegram/requirements.txt
+
+    @echo "Building api"
+    @cd {{ base-project-dir }}/api && ./gradlew build

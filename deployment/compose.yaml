@@ -1,0 +1,179 @@
+name: deadlines
+services:
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - server
+  postgres:
+    image: postgres:18.4-alpine
+    restart: always
+    user: postgres
+    volumes:
+      - db_data:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: ${DB_DB}
+      POSTGRES_PASSWORD: ${DB_PWD}
+      POSTGRES_USER: ${DB_USER}
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 30s
+      start_period: 10s
+      retries: 2
+    networks:
+      - server
+      - setup
+  garage:
+    image: dxflrs/garage:v2.3.0
+    restart: always
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+      GARAGE_METRICS_TOKEN: ${GARAGE_METRICS_TOKEN}
+    volumes:
+      - ../configs/garage.toml:/etc/garage.toml:ro,Z
+      - garage_metadata:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    networks:
+      - server
+      - setup
+  kafka:
+    image: apache/kafka:4.3.1
+    restart: unless-stopped
+    environment:
+      KAFKA_KRAFT_MODE: "true"
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - server
+      - setup
+    healthcheck:
+      test: /opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server kafka:9092 || exit 1
+      interval: 30s
+      start_period: 10s
+      retries: 2
+  frontend:
+    build: git@github.com:Codename-deadline/frontend#main
+    depends_on:
+      - api
+    networks:
+      - frontend
+    environment:
+      - VITE_BASE_API_URL=${PUBLIC_BASE_URL}/api
+  api:
+    build: git@github.com:Codename-deadline/api#main
+    networks:
+      - server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/deadlines
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PWD}
+
+      - SPRINGDOC_API_DOCS_ENABLED=false
+      - SPRINGDOC_SWAGGER_UI_ENABLED=false
+      - SPRING_PROFILES_ACTIVE=dev
+
+      - REDIS_HOSTNAME=redis
+
+      - JWT_SECRET=${JWT_SECRET}
+
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT}
+      - S3_REGION=${S3_REGION}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'curl -fsS http://localhost:8080/actuator/health | grep -q ''"status":"UP"''',
+        ]
+      interval: 30s
+      retries: 2
+      start_period: 10s
+  telegram-bot:
+    build:
+      context: git@github.com:Codename-deadline/bots#main
+      args:
+        - PLATFORM=telegram
+    restart: "unless-stopped"
+    environment:
+      - BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - GRPC_TARGET=api:9090
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - server
+  gateway:
+    build: gateway/nginx
+    restart: on-failure
+    ports:
+      - 25565:25565
+    environment:
+      - SERVER_PORT=${SERVER_PORT}
+      - SERVER_NAME=${SERVER_NAME}
+      - API_BASE_URL=http://api:8080
+      - FRONTEND_BASE_URL=http://frontend:80
+      - S3_BASE_URL=http://garage:3900
+      - S3_BUCKET=${S3_BUCKET}
+    networks:
+      - server
+      - frontend
+    depends_on:
+      - api
+      - frontend
+  helper:
+    profiles:
+      - setup
+    image: deadlines-setup
+    build: ../helper
+    volumes:
+      - ../configs:/setup/configs:ro,Z
+      - ../common/.env-prod-template:/setup/.env-template:ro,Z
+      - ../generated:/setup/generated:rw,z
+    networks:
+      - setup
+networks:
+  server:
+  frontend:
+  setup:
+
+volumes:
+  db_data:
+  kafka_data:
+  redis_data:
+  garage_data:
+  garage_metadata:

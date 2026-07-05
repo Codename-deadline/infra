@@ -1,0 +1,6 @@
+bots:
+  - id: <YOUR_BOT_ID>
+    username: <YOUR_BOT_USERNAME>
+    messenger: "TELEGRAM"
+app:
+  file_storage_size: 1000000000

@@ -1,0 +1,27 @@
+server {
+    listen ${SERVER_PORT};
+    listen [::]:${SERVER_PORT};
+
+    server_name ${SERVER_NAME};
+
+    location /${S3_BUCKET}/ {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass ${S3_BASE_URL};
+    }
+    
+    location ~ ^/(api|actuator) {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass ${API_BASE_URL};
+    }
+
+    location / {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass ${FRONTEND_BASE_URL};
+    }
+}
