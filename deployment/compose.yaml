@@ -115,7 +115,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'curl -fsS http://localhost:8080/actuator/health | grep -q ''"status":"UP"''',
+          'wget -qO- http://localhost:8080/actuator/health | grep -q ''"status":"UP"''',
         ]
       interval: 30s
       retries: 2
