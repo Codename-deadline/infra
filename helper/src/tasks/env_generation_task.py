@@ -56,6 +56,7 @@ class EnvGenerationTask(Task):
         SecretConfig("GARAGE_ADMIN_TOKEN", SecretType.HEX, 32),
         SecretConfig("GARAGE_METRICS_TOKEN", SecretType.HEX, 32),
         SecretConfig("JWT_SECRET", SecretType.BASE64, 64),
+        SecretConfig("OTP_HASH_SECRET", SecretType.BASE64, 64),
     ]
 
     def __init__(
