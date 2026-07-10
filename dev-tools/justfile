@@ -29,12 +29,15 @@ run-app:
 
     @echo "Services running in tmux project '{{ project }}'"
 
-# Stops both env and application
+# Stops application
 [group('application')]
 stop-app:
-    -tmux kill-session -t {{ project }}
-    @just stop-env
+    @-tmux kill-session -t {{ project }}
     @echo "All services stopped."
+
+# Stops both env and application
+[group('application')]
+stop: stop-app stop-env
 
 # Handles initial setup for the first app run
 [group('application')]
