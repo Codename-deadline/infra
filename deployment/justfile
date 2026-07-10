@@ -8,3 +8,23 @@ initial-deploy: rebuild-helper
     @just _run-task -t pre-init -e prod
     @docker compose --env-file {{ dotenv-prod }} up -d --wait
     @just _run-task -t post-init -e prod
+
+# Stops the application and erases all the stored data (ignores images)
+[group('deployment')]
+uninstall:
+    docker compose --env-file {{ dotenv-prod }} down -v
+    rm {{ dotenv-prod }}
+
+# Erases the stored data and performs a clean deployment
+[group('deployment')]
+reinstall: uninstall initial-deploy
+
+# Starts the application (use `initial-deploy` for the first run)
+[group('lifecycle')]
+run:
+    docker compose --env-file {{ dotenv-prod }} up -d
+
+# Stops the application (does not delete data)
+[group('lifecycle')]
+stop:
+    docker compose --env-file {{ dotenv-prod }} down

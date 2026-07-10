@@ -1,19 +1,20 @@
 import '../common/common.just'
 
 # Starts required docker containers
-[group('environment')]
+[group('lifecycle')]
 run-env: generate-env
     @echo "Starting docker containers..."
     docker compose --env-file {{ dotenv-dev }} up -d --wait
 
 # Stops required docker containers
-[group('environment')]
-stop-env:
+[arg("volumes", long="volumes", short="v", value="-v", help="Remove docker volumes")]
+[group('lifecycle')]
+stop-env volumes='':
     @echo "Stoping docker containers..."
-    docker compose down
+    docker compose down {{ volumes }}
 
 # Starts application services
-[group('application')]
+[group('lifecycle')]
 run-app:
     tmux kill-session -t {{ project }} 2>/dev/null || true
 
@@ -30,17 +31,18 @@ run-app:
     @echo "Services running in tmux project '{{ project }}'"
 
 # Stops application
-[group('application')]
+[group('lifecycle')]
 stop-app:
     @-tmux kill-session -t {{ project }}
     @echo "All services stopped."
 
 # Stops both env and application
-[group('application')]
-stop: stop-app stop-env
+[arg("volumes", long="volumes", short="v", value="-v", help="Remove docker volumes")]
+[group('lifecycle')]
+stop volumes='': stop-app (stop-env volumes)
 
 # Handles initial setup for the first app run
-[group('application')]
+[group('setup')]
 first-run: generate-env stop-app rebuild-helper run-env
     @just _run-task -t pre-init -e dev
     just run-app
@@ -61,7 +63,7 @@ first-run: generate-env stop-app rebuild-helper run-env
     @just _run-task -t post-init -e dev
 
 # Attaches to the tmux session
-[group('application')]
+[group('setup')]
 attach:
     tmux attach -t {{ project }}
 
