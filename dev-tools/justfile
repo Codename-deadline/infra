@@ -72,17 +72,20 @@ clone j='1':
     @cd {{ base-project-dir }} && git clone --recurse-submodules -j {{ j }} git@github.com:Codename-deadline/bots.git
     @echo "Cloning frontend repo..."
     @cd {{ base-project-dir }} && git clone --recurse-submodules -j {{ j }} git@github.com:Codename-deadline/frontend.git
+    @echo "Cloning proto repo..."
+    @cd {{ base-project-dir }} && git clone -j {{ j }} git@github.com:Codename-deadline/proto-internal.git
 
 # Clones all repositories and installs deps
 [group('setup')]
-setup-project: clone
+setup-project:
     @echo "Downloading frontend dependencies..."
     @cd {{ base-project-dir }}/frontend && bun install --frozen-lockfile
 
     @echo "Downloading bots dependencies..."
-    @cd {{ base-project-dir }}/bots && python3 -m venv .venv && source .venv/bin/activate && \
-        pip install --upgrade pip && \
-        pip install -U -r common/requirements.txt -r common/requirements-dev.txt -r telegram/requirements.txt
+    @cd {{ base-project-dir }}/bots && \
+        uv sync --all-extras --dev --locked && \
+        source .venv/bin/activate && prek install && \
+        cd common/infrastructure/grpc && uv run sh ./generate.sh
 
-    @echo "Building api"
+    @echo "Building api..."
     @cd {{ base-project-dir }}/api && ./gradlew build
