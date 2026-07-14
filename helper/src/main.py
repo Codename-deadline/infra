@@ -10,6 +10,8 @@ from src.constants import DEV_CONFIG_PATH, PROD_CONFIG_PATH, SETUP_CONFIG_PATH
 from src.tasks.env_generation_task import EnvGenerationTask
 from src.tasks.garage_task import GarageTask
 from src.tasks.kafka_task import KafkaTask
+from src.tasks.pki.tasks.pki_init_task import PkiInitTask
+from src.tasks.pki.tasks.pki_validation_task import PkiValidationTask
 from src.tasks.postgresql_task import PostgreSQLTask
 from src.tasks.task import Task
 from src.utils import resolve_dotenv_path
@@ -79,6 +81,18 @@ def generate_env():
     )
 
 
+@app.command(help="Generates or validates configured PKI material")
+def pki_init() -> None:
+    setup_cfg, _ = get_configs()
+    run_task(PkiInitTask(console, setup_cfg.pki))
+
+
+@app.command(help="Validates existing PKI material without modifying it")
+def pki_validate() -> None:
+    setup_cfg, _ = get_configs()
+    run_task(PkiValidationTask(console, setup_cfg.pki))
+
+
 @app.command(help="Sets up S3 by creating an app key, and required buckets")
 def garage_setup():
     setup_cfg, app_cfg = get_configs()
@@ -88,7 +102,7 @@ def garage_setup():
 @app.command(help="Creates Kafka topics")
 def kafka_setup():
     setup_cfg, _ = get_configs()
-    run_task(KafkaTask(console, setup_cfg))
+    run_task(KafkaTask(console, setup_cfg, environment))
 
 
 @app.command(help="Inserts values into bots table")
@@ -104,7 +118,7 @@ def pre_init():
     total_elapsed += run_task(
         GarageTask(console, setup_cfg, app_cfg.app.file_storage_size, environment)
     )
-    total_elapsed += run_task(KafkaTask(console, setup_cfg))
+    total_elapsed += run_task(KafkaTask(console, setup_cfg, environment))
     console.print(f"Pre-init tasks finished in {total_elapsed:.2f} seconds")
 
 

@@ -49,10 +49,18 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
       KAFKA_LISTENERS: CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:SSL,INTERNAL:SSL,EXTERNAL:SSL
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/keystore.p12
+      KAFKA_SSL_KEYSTORE_PASSWORD: ${KAFKA_BROKER_KEYSTORE_PASSWORD:-}
+      KAFKA_SSL_KEY_PASSWORD: ${KAFKA_BROKER_KEY_PASSWORD:-}
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/truststore.p12
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: ${KAFKA_BROKER_TRUSTSTORE_PASSWORD:-}
+      KAFKA_SSL_CLIENT_AUTH: required
       KAFKA_LOG_DIRS: /var/lib/kafka/data
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -61,11 +69,29 @@ services:
       CLUSTER_ID: ${KAFKA_CLUSTER_ID}
     volumes:
       - kafka_data:/var/lib/kafka/data
+      - ../generated/pki/entities/kafka-broker:/etc/kafka/secrets:ro,Z
     networks:
       - server
       - setup
     healthcheck:
-      test: /opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server kafka:9092 || exit 1
+      test:
+        - CMD-SHELL
+        - |
+          cat > /tmp/healthcheck.properties <<EOF
+                security.protocol=SSL
+                ssl.truststore.type=PKCS12
+                ssl.truststore.location=/etc/kafka/secrets/truststore.p12
+                ssl.truststore.password=$${KAFKA_SSL_TRUSTSTORE_PASSWORD}
+                ssl.keystore.type=PKCS12
+                ssl.keystore.location=/etc/kafka/secrets/keystore.p12
+                ssl.keystore.password=$${KAFKA_SSL_KEYSTORE_PASSWORD}
+                ssl.key.password=$${KAFKA_SSL_KEY_PASSWORD}
+                ssl.endpoint.identification.algorithm=https
+                EOF && \
+          chmod 600 /tmp/healthcheck.properties && \
+          /opt/kafka/bin/kafka-cluster.sh cluster-id \
+            --bootstrap-server kafka:29092 \
+            --command-config /tmp/healthcheck.properties
       interval: 30s
       start_period: 10s
       retries: 2
@@ -95,7 +121,7 @@ services:
 
       - SPRINGDOC_API_DOCS_ENABLED=false
       - SPRINGDOC_SWAGGER_UI_ENABLED=false
-      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_PROFILES_ACTIVE=prod
 
       - REDIS_HOSTNAME=redis
 
@@ -103,7 +129,13 @@ services:
 
       - JWT_SECRET=${JWT_SECRET}
 
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_SECURITY_PROTOCOL=SSL
+      - KAFKA_SSL_TRUSTSTORE_LOCATION=/run/secrets/kafka/client.truststore.p12
+      - KAFKA_SSL_TRUSTSTORE_PASSWORD=${API_KAFKA_TRUSTSTORE_PASSWORD:-}
+      - KAFKA_SSL_KEYSTORE_LOCATION=/run/secrets/kafka/client.keystore.p12
+      - KAFKA_SSL_KEYSTORE_PASSWORD=${API_KAFKA_KEYSTORE_PASSWORD:-}
+      - KAFKA_SSL_KEY_PASSWORD=${API_KAFKA_KEY_PASSWORD:-}
 
       - S3_ENDPOINT=${S3_ENDPOINT}
       - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT}
@@ -113,6 +145,15 @@ services:
       - S3_SECRET_KEY=${S3_SECRET_KEY}
 
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - GRPC_TLS_CERTIFICATE=/run/secrets/grpc/server.crt
+      - GRPC_TLS_PRIVATE_KEY=/run/secrets/grpc/server.key
+      - GRPC_TLS_CA_CERTIFICATE=/run/secrets/grpc/ca.crt
+    volumes:
+      - ../generated/pki/entities/api-grpc/cert.pem:/run/secrets/grpc/server.crt:ro,Z
+      - ../generated/pki/entities/api-grpc/key.pem:/run/secrets/grpc/server.key:ro,Z
+      - ../generated/pki/entities/api-grpc/ca.pem:/run/secrets/grpc/ca.crt:ro,Z
+      - ../generated/pki/entities/api-kafka/keystore.p12:/run/secrets/kafka/client.keystore.p12:ro,Z
+      - ../generated/pki/entities/api-kafka/truststore.p12:/run/secrets/kafka/client.truststore.p12:ro,Z
     healthcheck:
       test:
         [
@@ -131,7 +172,15 @@ services:
     environment:
       - BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - GRPC_TARGET=api:9090
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - GRPC_TLS_ENABLED=true
+      - GRPC_TLS_CA_CERTIFICATE=/run/secrets/grpc/ca.crt
+      - GRPC_TLS_CERTIFICATE=/run/secrets/grpc/client.crt
+      - GRPC_TLS_PRIVATE_KEY=/run/secrets/grpc/client.key
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_TLS_ENABLED=true
+      - KAFKA_TLS_CA_CERTIFICATE=/run/secrets/kafka/ca.crt
+      - KAFKA_TLS_CERTIFICATE=/run/secrets/kafka/client.crt
+      - KAFKA_TLS_PRIVATE_KEY=/run/secrets/kafka/client.key
     depends_on:
       kafka:
         condition: service_healthy
@@ -139,6 +188,13 @@ services:
         condition: service_healthy
     networks:
       - server
+    volumes:
+      - ../generated/pki/entities/telegram-grpc/ca.pem:/run/secrets/grpc/ca.crt:ro,Z
+      - ../generated/pki/entities/telegram-grpc/cert.pem:/run/secrets/grpc/client.crt:ro,Z
+      - ../generated/pki/entities/telegram-grpc/key.pem:/run/secrets/grpc/client.key:ro,Z
+      - ../generated/pki/entities/telegram-kafka/ca.pem:/run/secrets/kafka/ca.crt:ro,Z
+      - ../generated/pki/entities/telegram-kafka/cert.pem:/run/secrets/kafka/client.crt:ro,Z
+      - ../generated/pki/entities/telegram-kafka/key.pem:/run/secrets/kafka/client.key:ro,Z
   gateway:
     build: gateway/nginx
     restart: on-failure

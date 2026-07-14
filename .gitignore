@@ -7,6 +7,7 @@ __pycache__
 sql
 
 generated/.env*
+generated/pki/
 .env
 .env-prod
 

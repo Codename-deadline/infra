@@ -1,4 +1,5 @@
 asyncpg==0.31.0
+cryptography==49.0.0
 garage_admin_sdk @ git+https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python@709b9c1317e68b9f4ea5025ef8fa9df0d2ce899c
 kafka-python==3.0.7
 

@@ -68,6 +68,12 @@ Replace all `<YOUR_BOT_TOKEN>` with actual bot tokens. For example:
 
 You can save and close the file now.
 
+## Generating certificates / PKI
+
+```bash
+just generate-pki -e prod
+```
+
 ## First start
 
 Now the only step remaining is to launch an app. For that run the following command and wait:

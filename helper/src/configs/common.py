@@ -2,6 +2,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from src.configs.pki_config import EntityName
+
 
 class ContainerSettings(BaseModel):
     kafka: str
@@ -17,6 +19,7 @@ class KafkaTopic(BaseModel):
 
 
 class KafkaSettings(BaseModel):
+    admin_identity: EntityName
     topics: list[KafkaTopic]
 
 

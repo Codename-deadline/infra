@@ -5,6 +5,7 @@ containers:
   object_storage: "garage"
   db: "postgres"
 kafka:
+  admin_identity: "kafka-admin"
   topics:
     - name: "private.integration.notifications"
     - name: "private.integration.accountlinkage"
@@ -16,3 +17,147 @@ garage:
     prod: "prod"
   bucket: "deadlines-attachments"
   app_key_name: "deadlines-api"
+pki:
+  output_directory: "pki"
+  backdate_minutes: 5
+  renew_before_days: 30
+  authorities:
+    - name: "root"
+      issuer: null
+      subject:
+        common_name: "Deadlines Root CA"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      key_bits: 4096
+      validity_days: 3650
+      path_length: 1
+    - name: "kafka-ca"
+      issuer: "root"
+      subject:
+        common_name: "Deadlines Kafka CA"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      key_bits: 3072
+      validity_days: 1825
+      path_length: 0
+    - name: "grpc-ca"
+      issuer: "root"
+      subject:
+        common_name: "Deadlines gRPC CA"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      key_bits: 3072
+      validity_days: 1825
+      path_length: 0
+  certificates:
+    - name: "kafka-broker"
+      issuer: "kafka-ca"
+      subject:
+        common_name: "kafka-broker"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      alternative_names:
+        dns: ["kafka", "localhost"]
+        ip: []
+        uri: []
+      extended_key_usages: ["server_auth", "client_auth"]
+      key_bits: 2048
+      validity_days: 365
+      pkcs12: true
+    - name: "kafka-admin"
+      issuer: "kafka-ca"
+      subject:
+        common_name: "kafka-admin"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      alternative_names:
+        dns: []
+        ip: []
+        uri: []
+      extended_key_usages: ["client_auth"]
+      key_bits: 2048
+      validity_days: 365
+      pkcs12: false
+    - name: "api-kafka"
+      issuer: "kafka-ca"
+      subject:
+        common_name: "api-kafka"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      alternative_names:
+        dns: []
+        ip: []
+        uri: []
+      extended_key_usages: ["client_auth"]
+      key_bits: 2048
+      validity_days: 365
+      pkcs12: true
+    - name: "telegram-kafka"
+      issuer: "kafka-ca"
+      subject:
+        common_name: "telegram-kafka"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      alternative_names:
+        dns: []
+        ip: []
+        uri: []
+      extended_key_usages: ["client_auth"]
+      key_bits: 2048
+      validity_days: 365
+      pkcs12: false
+    - name: "api-grpc"
+      issuer: "grpc-ca"
+      subject:
+        common_name: "api-grpc"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      alternative_names:
+        dns: ["api"]
+        ip: []
+        uri: []
+      extended_key_usages: ["server_auth"]
+      key_bits: 2048
+      validity_days: 365
+      pkcs12: false
+    - name: "telegram-grpc"
+      issuer: "grpc-ca"
+      subject:
+        common_name: "telegram-grpc"
+        organization: "Deadlines"
+        organizational_unit: null
+        country: null
+        state: null
+        locality: null
+      alternative_names:
+        dns: []
+        ip: []
+        uri: []
+      extended_key_usages: ["client_auth"]
+      key_bits: 2048
+      validity_days: 365
+      pkcs12: false

@@ -4,15 +4,16 @@ import '../common/common.just'
 [group('deployment')]
 initial-deploy: rebuild-helper
     @just generate-env -e prod
-    @docker compose --env-file {{ dotenv-prod }} up kafka garage -d --wait
+    @just generate-pki -e prod
+    @docker compose --env-file {{ dotenv-prod }} --env-file {{ pki-dotenv }} up kafka garage -d --wait
     @just _run-task -t pre-init -e prod
-    @docker compose --env-file {{ dotenv-prod }} up --build -d --wait
+    @docker compose --env-file {{ dotenv-prod }} --env-file {{ pki-dotenv }} up --build -d --wait
     @just _run-task -t post-init -e prod
 
 # Stops the application and erases all the stored data (ignores images)
 [group('deployment')]
 uninstall:
-    docker compose --env-file {{ dotenv-prod }} down -v
+    docker compose --env-file {{ dotenv-prod }} --env-file {{ pki-dotenv }} down -v
     rm {{ dotenv-prod }}
 
 # Erases the stored data and performs a clean deployment
@@ -22,9 +23,9 @@ reinstall: uninstall initial-deploy
 # Starts the application (use `initial-deploy` for the first run)
 [group('lifecycle')]
 run:
-    docker compose --env-file {{ dotenv-prod }} up -d
+    docker compose --env-file {{ dotenv-prod }} --env-file {{ pki-dotenv }} up -d
 
 # Stops the application (does not delete data)
 [group('lifecycle')]
 stop:
-    docker compose --env-file {{ dotenv-prod }} down
+    docker compose --env-file {{ dotenv-prod }} --env-file {{ pki-dotenv }} down
