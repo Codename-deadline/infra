@@ -15,6 +15,7 @@ initial-deploy: rebuild-helper
 uninstall:
     docker compose --env-file {{ dotenv-prod }} --env-file {{ pki-dotenv }} down -v
     rm {{ dotenv-prod }}
+    rm -rf {{ pki-dir }}
 
 # Erases the stored data and performs a clean deployment
 [group('deployment')]

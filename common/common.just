@@ -3,7 +3,9 @@ project := "deadlines"
 dotenv-dev := "../generated/.env"
 dotenv-prod := "../generated/.env-prod"
 pki-dotenv := "../generated/pki/passwords.env"
+
 base-project-dir := "../.."
+pki-dir := "../generated/pki"
 
 # Generates .env from .env-template if missing
 [arg("env", long="env", short="e")]
