@@ -3,7 +3,6 @@ import os
 import sys
 
 from rich.console import Console
-
 from src.configs.dev_config import DevConfig
 from src.configs.prod_config import ProdConfig
 from src.configs.setup_config import Config
@@ -58,6 +57,7 @@ class PostgreSQLTask(Task):
 
         try:
             for i, bot in enumerate(self.app_config.bots):
+                bot_username: str = bot.username.removeprefix("@")
                 try:
                     await connection.execute(
                         """
@@ -67,14 +67,14 @@ class PostgreSQLTask(Task):
                         i,
                         bot.id,
                         bot.messenger,
-                        bot.username,
+                        bot_username,
                     )
                     self.console.print(
-                        f"[green]Registered @{bot.username}. Messenger: {bot.messenger.name.capitalize()}[/green]"
+                        f"[green]Registered @{bot_username}. Messenger: {bot.messenger.name.capitalize()}[/green]"
                     )
                 except asyncpg.exceptions.UniqueViolationError:
                     self.console.print(
-                        f"[yellow]Bot '{bot.username}' already exists.[/yellow]"
+                        f"[yellow]Bot '{bot_username}' already exists.[/yellow]"
                     )
         except asyncpg.exceptions.UndefinedTableError:
             self.console.print(

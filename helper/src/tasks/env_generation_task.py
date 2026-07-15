@@ -4,6 +4,7 @@ import re
 import secrets
 from dataclasses import dataclass
 from enum import StrEnum
+from multiprocessing import Value
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -95,7 +96,9 @@ class EnvGenerationTask(Task):
     def _resolve_config_placeholder(self, match: re.Match[str]) -> str:
         namespace: str = match.group(1)
         if not is_production_env(self.env) and namespace.startswith("PROD_"):
-            return "<PROD_ONLY_VALUE>"
+            raise ValueError(
+                f'Environment mismatch. Located production variable: "{match}" while in a non prod environment ({self.env})'
+            )
         namespace = namespace.split("_")[-1]
 
         path: str = match.group(2)
