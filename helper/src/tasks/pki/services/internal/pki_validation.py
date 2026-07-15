@@ -8,7 +8,13 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import pkcs12
 from src.configs.pki_config import CertificateConfig, EntityName, PkiConfig
-from src.tasks.pki.constants import DIRECTORY_MODE, PRIVATE_FILE_MODE, PUBLIC_FILE_MODE
+from src.tasks.pki.constants import (
+    ENCRYPTED_STORE_MODE,
+    ENTITY_DIRECTORY_MODE,
+    PRIVATE_DIRECTORY_MODE,
+    PRIVATE_FILE_MODE,
+    PUBLIC_FILE_MODE,
+)
 from src.tasks.pki.schemas import (
     AuthorityMaterial,
     ManifestCertificate,
@@ -82,30 +88,32 @@ class PkiValidationService:
     def _validate_layout(self, output_directory: Path) -> None:
         """Check every configured artifact exists, is not a symlink, and has its mode."""
 
-        self._validate_directory(output_directory)
-        self._validate_directory(output_directory / "authorities")
-        self._validate_directory(output_directory / "entities")
+        self._validate_directory(output_directory, ENTITY_DIRECTORY_MODE)
+        self._validate_directory(
+            output_directory / "authorities", PRIVATE_DIRECTORY_MODE
+        )
+        self._validate_directory(output_directory / "entities", ENTITY_DIRECTORY_MODE)
 
         self._validate_file(output_directory / "manifest.json", PUBLIC_FILE_MODE)
         self._validate_file(output_directory / "passwords.env", PRIVATE_FILE_MODE)
 
         for authority in self._config.authorities:
             directory = output_directory / "authorities" / authority.name
-            self._validate_directory(directory)
+            self._validate_directory(directory, PRIVATE_DIRECTORY_MODE)
             self._validate_file(directory / "key.pem", PRIVATE_FILE_MODE)
             self._validate_file(directory / "cert.pem", PUBLIC_FILE_MODE)
             self._validate_file(directory / "chain.pem", PUBLIC_FILE_MODE)
 
         for certificate in self._config.certificates:
             directory = output_directory / "entities" / certificate.name
-            self._validate_directory(directory)
+            self._validate_directory(directory, ENTITY_DIRECTORY_MODE)
             self._validate_file(directory / "key.pem", PRIVATE_FILE_MODE)
             self._validate_file(directory / "cert.pem", PUBLIC_FILE_MODE)
             self._validate_file(directory / "chain.pem", PUBLIC_FILE_MODE)
             self._validate_file(directory / "ca.pem", PUBLIC_FILE_MODE)
             if certificate.pkcs12:
-                self._validate_file(directory / "keystore.p12", PRIVATE_FILE_MODE)
-                self._validate_file(directory / "truststore.p12", PRIVATE_FILE_MODE)
+                self._validate_file(directory / "keystore.p12", ENCRYPTED_STORE_MODE)
+                self._validate_file(directory / "truststore.p12", ENCRYPTED_STORE_MODE)
 
     def _validate_authority(
         self,
@@ -405,12 +413,12 @@ class PkiValidationService:
         return set(extension.value)
 
     @staticmethod
-    def _validate_directory(path: Path) -> None:
-        """Reject symlinks and non-directories, then require mode 0750."""
+    def _validate_directory(path: Path, expected_mode: int) -> None:
+        """Reject symlinks and non-directories, then require the supplied mode."""
 
         if path.is_symlink() or not path.is_dir():
             raise ValueError(f"Expected safe PKI directory: {path}")
-        if stat.S_IMODE(path.stat().st_mode) != DIRECTORY_MODE:
+        if stat.S_IMODE(path.stat().st_mode) != expected_mode:
             raise ValueError(f"Invalid PKI directory permissions: {path}")
 
     @staticmethod

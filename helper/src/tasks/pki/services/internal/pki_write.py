@@ -13,7 +13,13 @@ from src.configs.pki_config import (
     EntityName,
     PkiConfig,
 )
-from src.tasks.pki.constants import DIRECTORY_MODE, PRIVATE_FILE_MODE, PUBLIC_FILE_MODE
+from src.tasks.pki.constants import (
+    ENCRYPTED_STORE_MODE,
+    ENTITY_DIRECTORY_MODE,
+    PRIVATE_DIRECTORY_MODE,
+    PRIVATE_FILE_MODE,
+    PUBLIC_FILE_MODE,
+)
 from src.tasks.pki.schemas import (
     AuthorityMaterial,
     ManifestCertificate,
@@ -38,11 +44,11 @@ class PkiWriteService:
         self._config: PkiConfig = config
 
     def write(self, output_directory: Path) -> None:
-        self._create_directory(output_directory)
+        self._create_directory(output_directory, ENTITY_DIRECTORY_MODE)
         authorities_directory = output_directory / "authorities"
         entities_directory = output_directory / "entities"
-        self._create_directory(authorities_directory)
-        self._create_directory(entities_directory)
+        self._create_directory(authorities_directory, PRIVATE_DIRECTORY_MODE)
+        self._create_directory(entities_directory, ENTITY_DIRECTORY_MODE)
 
         generation_time = datetime.now(UTC)
         authority_by_name: dict[EntityName, CertificateAuthorityConfig] = {
@@ -165,7 +171,7 @@ class PkiWriteService:
         generated[config.name] = material
 
         directory = authorities_directory / config.name
-        self._create_directory(directory)
+        self._create_directory(directory, PRIVATE_DIRECTORY_MODE)
         self._write_private_key(directory / "key.pem", private_key)
         self._write_certificate(directory / "cert.pem", certificate)
         self._write_certificate_chain(
@@ -231,7 +237,7 @@ class PkiWriteService:
         )
 
         directory = entities_directory / config.name
-        self._create_directory(directory)
+        self._create_directory(directory, ENTITY_DIRECTORY_MODE)
         self._write_private_key(directory / "key.pem", private_key)
         self._write_certificate(directory / "cert.pem", certificate)
         certificate_chain = signing_chain(issuer)
@@ -283,9 +289,20 @@ class PkiWriteService:
                 passwords.truststore
             ),
         )
-        self._write_file(directory / "keystore.p12", keystore, PRIVATE_FILE_MODE)
-        self._write_file(directory / "truststore.p12", truststore, PRIVATE_FILE_MODE)
+        self._write_file(directory / "keystore.p12", keystore, ENCRYPTED_STORE_MODE)
+        self._write_file(directory / "truststore.p12", truststore, ENCRYPTED_STORE_MODE)
         return passwords
+
+    def normalize_runtime_permissions(self, output_directory: Path) -> None:
+        """Make service-mounted entity directories and encrypted stores readable."""
+        self._chmod_existing(output_directory, ENTITY_DIRECTORY_MODE)
+        self._chmod_existing(output_directory / "entities", ENTITY_DIRECTORY_MODE)
+        for certificate in self._config.certificates:
+            directory = output_directory / "entities" / certificate.name
+            self._chmod_existing(directory, ENTITY_DIRECTORY_MODE)
+            if certificate.pkcs12:
+                self._chmod_existing(directory / "keystore.p12", ENCRYPTED_STORE_MODE)
+                self._chmod_existing(directory / "truststore.p12", ENCRYPTED_STORE_MODE)
 
     def _write_pkcs12_passwords(
         self,
@@ -309,9 +326,16 @@ class PkiWriteService:
         )
 
     @staticmethod
-    def _create_directory(path: Path) -> None:
-        path.mkdir(parents=True, exist_ok=False, mode=DIRECTORY_MODE)
-        path.chmod(DIRECTORY_MODE)
+    def _create_directory(path: Path, mode: int) -> None:
+        path.mkdir(parents=True, exist_ok=False, mode=mode)
+        path.chmod(mode)
+
+    @staticmethod
+    def _chmod_existing(path: Path, mode: int) -> None:
+        if path.is_symlink():
+            raise ValueError(f"Refusing to change permissions on PKI symlink: {path}")
+        if path.exists():
+            path.chmod(mode)
 
     @staticmethod
     def _write_private_key(path: Path, private_key: rsa.RSAPrivateKey) -> None:

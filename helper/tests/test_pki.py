@@ -233,10 +233,39 @@ class PkiServiceTest(unittest.TestCase):
         self.assertEqual(
             stat.S_IMODE((entity_directory / "key.pem").stat().st_mode), 0o600
         )
+        self.assertEqual(stat.S_IMODE(entity_directory.stat().st_mode), 0o755)
+        self.assertEqual(
+            stat.S_IMODE((entity_directory / "keystore.p12").stat().st_mode),
+            0o644,
+        )
+        self.assertEqual(
+            stat.S_IMODE((entity_directory / "truststore.p12").stat().st_mode),
+            0o644,
+        )
         self.assertEqual(stat.S_IMODE((output / "passwords.env").stat().st_mode), 0o600)
         passwords = (output / "passwords.env").read_text(encoding="utf-8")
         self.assertIn("KAFKA_BROKER_KEY_PASSWORD=", passwords)
         self._service.validate()
+
+    def test_initialize_repairs_legacy_runtime_permissions(self) -> None:
+        _ = self._service.initialize()
+        output = self._service.output_directory
+        entities_directory = output / "entities"
+        entity_directory = entities_directory / "kafka-broker"
+        output.chmod(0o750)
+        entities_directory.chmod(0o750)
+        entity_directory.chmod(0o750)
+        (entity_directory / "keystore.p12").chmod(0o600)
+        (entity_directory / "truststore.p12").chmod(0o600)
+
+        self.assertEqual(self._service.initialize(), "validated")
+        self.assertEqual(stat.S_IMODE(output.stat().st_mode), 0o755)
+        self.assertEqual(stat.S_IMODE(entities_directory.stat().st_mode), 0o755)
+        self.assertEqual(stat.S_IMODE(entity_directory.stat().st_mode), 0o755)
+        self.assertEqual(
+            stat.S_IMODE((entity_directory / "keystore.p12").stat().st_mode),
+            0o644,
+        )
 
     def test_rejects_configuration_drift_without_replacing_material(self) -> None:
         _ = self._service.initialize()

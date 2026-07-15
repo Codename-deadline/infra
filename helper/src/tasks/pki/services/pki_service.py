@@ -29,6 +29,7 @@ class PkiService:
 
     def initialize(self) -> Literal["generated", "validated"]:
         if self._output_directory.exists():
+            self._writer.normalize_runtime_permissions(self._output_directory)
             self.validate()
             return "validated"
 
