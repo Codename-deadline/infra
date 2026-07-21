@@ -171,12 +171,16 @@ services:
     restart: "unless-stopped"
     environment:
       - BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - APP_PUBLIC_URL=${PUBLIC_BASE_URL}
+
       - GRPC_TARGET=api:9090
       - GRPC_TLS_ENABLED=true
       - GRPC_TLS_CA_CERTIFICATE=/run/secrets/grpc/ca.crt
       - GRPC_TLS_CERTIFICATE=/run/secrets/grpc/client.crt
       - GRPC_TLS_PRIVATE_KEY=/run/secrets/grpc/client.key
+
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_CONSUMER_GROUP=bots-telegram
       - KAFKA_TLS_ENABLED=true
       - KAFKA_TLS_CA_CERTIFICATE=/run/secrets/kafka/ca.crt
       - KAFKA_TLS_CERTIFICATE=/run/secrets/kafka/client.crt

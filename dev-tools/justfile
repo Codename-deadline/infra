@@ -11,7 +11,7 @@ run-env: generate-env
 [group('lifecycle')]
 stop-env volumes='':
     @echo "Stoping docker containers..."
-    docker compose down {{ volumes }}
+    docker compose --env-file {{ dotenv-dev }} down {{ volumes }}
 
 # Starts application services
 [group('lifecycle')]
