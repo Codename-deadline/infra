@@ -126,7 +126,7 @@ class PkiValidationService:
 
         The private key must produce the certificate's public key. The certificate
         must have the configured subject and size, CA constraints and usages, and
-        a signature from its configured issuer (or itself for the root).
+        a signature from its configured issuer (or itself for a root).
         """
 
         config = authority.config

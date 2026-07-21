@@ -72,7 +72,6 @@ class KafkaTask(Task):
             ssl.Purpose.SERVER_AUTH,
             cafile=identity_directory / "ca.pem",
         )
-        context.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
         context.load_cert_chain(
             certfile=identity_directory / "cert.pem",
             keyfile=identity_directory / "key.pem",

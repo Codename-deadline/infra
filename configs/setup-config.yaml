@@ -22,10 +22,10 @@ pki:
   backdate_minutes: 5
   renew_before_days: 30
   authorities:
-    - name: "root"
+    - name: "kafka-ca"
       issuer: null
       subject:
-        common_name: "Deadlines Root CA"
+        common_name: "Deadlines Kafka Root CA"
         organization: "Deadlines"
         organizational_unit: null
         country: null
@@ -33,30 +33,18 @@ pki:
         locality: null
       key_bits: 4096
       validity_days: 3650
-      path_length: 1
-    - name: "kafka-ca"
-      issuer: "root"
-      subject:
-        common_name: "Deadlines Kafka CA"
-        organization: "Deadlines"
-        organizational_unit: null
-        country: null
-        state: null
-        locality: null
-      key_bits: 3072
-      validity_days: 1825
       path_length: 0
     - name: "grpc-ca"
-      issuer: "root"
+      issuer: null
       subject:
-        common_name: "Deadlines gRPC CA"
+        common_name: "Deadlines gRPC Root CA"
         organization: "Deadlines"
         organizational_unit: null
         country: null
         state: null
         locality: null
-      key_bits: 3072
-      validity_days: 1825
+      key_bits: 4096
+      validity_days: 3650
       path_length: 0
   certificates:
     - name: "kafka-broker"

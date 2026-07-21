@@ -68,9 +68,8 @@ def _config() -> PkiConfig:
         backdate_minutes=5,
         renew_before_days=10,
         authorities=[
-            _authority("root", None, 365, 1),
-            _authority("kafka-ca", "root", 180, 0),
-            _authority("grpc-ca", "root", 180, 0),
+            _authority("kafka-ca", None, 365, 0),
+            _authority("grpc-ca", None, 365, 0),
         ],
         certificates=[
             _certificate(
@@ -93,6 +92,17 @@ def _config() -> PkiConfig:
 
 @final
 class PkiConfigTest(unittest.TestCase):
+    def test_accepts_multiple_root_authorities(self) -> None:
+        config = _config()
+
+        self.assertEqual(
+            [authority.name for authority in config.authorities],
+            ["kafka-ca", "grpc-ca"],
+        )
+        self.assertTrue(
+            all(authority.issuer is None for authority in config.authorities)
+        )
+
     def test_rejects_unknown_issuer(self) -> None:
         with self.assertRaisesRegex(ValidationError, "Unknown issuer"):
             _ = PkiConfig(
@@ -126,6 +136,27 @@ class PkiConfigTest(unittest.TestCase):
                     _certificate(
                         "api-grpc",
                         "root",
+                        [ExtendedKeyUsage.SERVER_AUTH],
+                        ["api"],
+                        False,
+                    )
+                ],
+            )
+
+    def test_rejects_hierarchy_without_root_authority(self) -> None:
+        with self.assertRaisesRegex(ValidationError, "at least one root authority"):
+            _ = PkiConfig(
+                output_directory=Path("pki"),
+                backdate_minutes=5,
+                renew_before_days=10,
+                authorities=[
+                    _authority("first-ca", "second-ca", 180, 0),
+                    _authority("second-ca", "first-ca", 180, 0),
+                ],
+                certificates=[
+                    _certificate(
+                        "api-grpc",
+                        "first-ca",
                         [ExtendedKeyUsage.SERVER_AUTH],
                         ["api"],
                         False,
@@ -188,7 +219,7 @@ class PkiServiceTest(unittest.TestCase):
 
         self.assertEqual(preserved_fingerprint, fingerprint)
 
-    def test_generates_expected_sans_usages_and_protocol_chains(self) -> None:
+    def test_generates_expected_sans_usages_and_protocol_roots(self) -> None:
         _ = self._service.initialize()
         output = self._service.output_directory
         kafka_certificate = x509.load_pem_x509_certificate(
@@ -218,8 +249,14 @@ class PkiServiceTest(unittest.TestCase):
             usages,
             {ExtendedKeyUsageOID.SERVER_AUTH, ExtendedKeyUsageOID.CLIENT_AUTH},
         )
+        kafka_ca.verify_directly_issued_by(kafka_ca)
+        grpc_ca.verify_directly_issued_by(grpc_ca)
+        self.assertNotEqual(kafka_ca.subject, grpc_ca.subject)
+
         kafka_certificate.verify_directly_issued_by(kafka_ca)
         grpc_certificate.verify_directly_issued_by(grpc_ca)
+        with self.assertRaises(ValueError):
+            kafka_certificate.verify_directly_issued_by(grpc_ca)
         with self.assertRaises(ValueError):
             grpc_certificate.verify_directly_issued_by(kafka_ca)
 

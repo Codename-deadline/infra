@@ -137,9 +137,9 @@ class PkiConfig(StrictConfigModel):
         roots: list[CertificateAuthorityConfig] = [
             authority for authority in self.authorities if authority.issuer is None
         ]
-        if len(roots) != 1:
+        if not roots:
             raise ValueError(
-                "PKI configuration must contain exactly one root authority"
+                "PKI configuration must contain at least one root authority"
             )
         shortest_validity = min(
             authority.validity_days for authority in self.authorities
