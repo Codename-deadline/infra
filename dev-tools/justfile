@@ -71,14 +71,8 @@ attach:
 [arg("j", short="j")]
 [group('setup')]
 clone j='1':
-    @echo "Cloning api repo..."
-    @cd {{ base-project-dir }} && git clone --recurse-submodules -j {{ j }} git@github.com:Codename-deadline/api.git
-    @echo "Cloning bots repo..."
-    @cd {{ base-project-dir }} && git clone --recurse-submodules -j {{ j }} git@github.com:Codename-deadline/bots.git
-    @echo "Cloning frontend repo..."
-    @cd {{ base-project-dir }} && git clone --recurse-submodules -j {{ j }} git@github.com:Codename-deadline/frontend.git
-    @echo "Cloning proto repo..."
-    @cd {{ base-project-dir }} && git clone -j {{ j }} git@github.com:Codename-deadline/proto-internal.git
+    @echo "Cloning deadlines repo..."
+    @cd {{ base-project-dir }}/.. && git clone -j {{ j }} git@github.com:Codename-deadline/deadlines.git
 
 # Clones all repositories and installs deps
 [group('setup')]
@@ -89,8 +83,10 @@ setup-project:
     @echo "Downloading bots dependencies..."
     @cd {{ base-project-dir }}/bots && \
         uv sync --all-extras --dev --locked && \
-        source .venv/bin/activate && prek install && \
         cd common/infrastructure/grpc && uv run sh ./generate.sh
+
+    @echo "Installing prek hooks..."
+    @cd {{ base-project-dir }} && uvx prek install
 
     @echo "Building api..."
     @cd {{ base-project-dir }}/api && ./gradlew build

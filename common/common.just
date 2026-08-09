@@ -4,7 +4,7 @@ dotenv-dev := "../generated/.env"
 dotenv-prod := "../generated/.env-prod"
 pki-dotenv := "../generated/pki/passwords.env"
 
-base-project-dir := "../.."
+base-project-dir := "../../deadlines"
 pki-dir := "../generated/pki"
 
 # Generates .env from .env-template if missing

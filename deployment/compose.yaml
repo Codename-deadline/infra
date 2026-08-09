@@ -96,7 +96,7 @@ services:
       start_period: 10s
       retries: 2
   frontend:
-    build: https://github.com/Codename-deadline/frontend.git
+    build: https://github.com/Codename-deadline/deadlines.git#main:frontend
     depends_on:
       - api
     networks:
@@ -104,7 +104,9 @@ services:
     environment:
       - VITE_BASE_API_URL=${PUBLIC_BASE_URL}/api
   api:
-    build: https://github.com/Codename-deadline/api.git
+    build:
+      context: https://github.com/Codename-deadline/deadlines.git#main
+      dockerfile: api/Dockerfile
     networks:
       - server
     depends_on:
@@ -165,7 +167,8 @@ services:
       start_period: 10s
   telegram-bot:
     build:
-      context: https://github.com/Codename-deadline/bots.git
+      context: https://github.com/Codename-deadline/deadlines.git#main
+      dockerfile: bots/Dockerfile
       args:
         - PLATFORM=telegram
     restart: "unless-stopped"

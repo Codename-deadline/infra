@@ -16,6 +16,16 @@ just clone
 
 ## Project setup
 
+### Git Hooks
+
+Project uses [prek](https://github.com/j178/prek) for git hooks.
+
+Install it using `uv`:
+
+```bash
+uv tool install prek
+```
+
 ### Creating dev config
 
 Copy the [config-dev-template.yaml](../configs/templates/config-dev-template.yaml) into [configs](../configs)
