@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Type
 
 from pydantic_settings import (
     BaseSettings,
@@ -15,7 +14,7 @@ class BaseConfig(ABC, BaseSettings):
     @classmethod
     def settings_customise_sources(
         cls,
-        settings_cls: Type[BaseSettings],
+        settings_cls: type[BaseSettings],
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
         dotenv_settings: PydanticBaseSettingsSource,
@@ -29,5 +28,5 @@ class BaseConfig(ABC, BaseSettings):
 
     @staticmethod
     @abstractmethod
-    def load() -> "BaseConfig":
+    def load() -> BaseConfig:
         pass

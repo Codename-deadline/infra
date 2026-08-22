@@ -1,6 +1,7 @@
 from typing import final, override
 
 from rich.console import Console
+
 from src.configs.pki_config import PkiConfig
 from src.tasks.pki.services.pki_service import PkiService
 from src.tasks.task import Task

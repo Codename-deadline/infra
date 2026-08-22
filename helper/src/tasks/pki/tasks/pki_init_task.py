@@ -1,6 +1,7 @@
 from typing import final, override
 
 from rich.console import Console
+
 from src.configs.pki_config import PkiConfig
 from src.tasks.pki.services.pki_service import PkiService
 from src.tasks.task import Task
@@ -19,7 +20,8 @@ class PkiInitTask(Task):
         result = self._service.initialize()
         if result == "generated":
             self.console.print(
-                f"[green]Generated PKI material in {self._service.output_directory}[/green]"
+                "[green]Generated PKI material in"
+                f" {self._service.output_directory}[/green]"
             )
         else:
             message = (

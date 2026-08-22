@@ -1,3 +1,4 @@
+import http
 import os
 import time
 from pathlib import Path
@@ -32,7 +33,7 @@ class GarageTask(Task):
         return self.config.garage.layout.dev
 
     def execute(self) -> None:
-        import garage_admin_sdk
+        import garage_admin_sdk  # noqa: PLC0415
 
         bucket_name: str = self.config.garage.bucket
         app_key_name: str = self.config.garage.app_key_name
@@ -50,7 +51,9 @@ class GarageTask(Task):
                     break
                 except Exception:
                     self.console.print(
-                        f"[red][ERROR]: Failed to connect to Garage {i + 1}/{RETRIES_CNT}. Retrying in {RETRIES_INTERVAL} seconds...[/red]"
+                        f"[red][ERROR]: Failed to connect to Garage"
+                        f" {i + 1}/{RETRIES_CNT}."
+                        f" Retrying in {RETRIES_INTERVAL} seconds...[/red]"
                     )
                     if i == RETRIES_CNT - 1:
                         raise
@@ -64,7 +67,7 @@ class GarageTask(Task):
                     f"[yellow]Garage bucket '{bucket_name}' already exists.[/yellow]"
                 )
             except garage_admin_sdk.ApiException as e:
-                if getattr(e, "status", None) != 404:
+                if getattr(e, "status", None) != http.HTTPStatus.NOT_FOUND:
                     raise
                 bucket = bucket_api.create_bucket(
                     garage_admin_sdk.CreateBucketRequest(globalAlias=bucket_name)
@@ -111,7 +114,8 @@ class GarageTask(Task):
                 )
             )
             self.console.print(
-                f"[green]Granted read/write access for '{app_key_name}' on '{bucket_name}'.[/green]"
+                f"[green]Granted read/write access for '{app_key_name}' on"
+                f" '{bucket_name}'.[/green]"
             )
 
             self._update_dotenv(
@@ -127,7 +131,7 @@ class GarageTask(Task):
             )
 
     def _garage_sdk_configuration(self):
-        import garage_admin_sdk
+        import garage_admin_sdk  # noqa: PLC0415
 
         token: str | None = os.getenv("GARAGE_ADMIN_TOKEN")
         if not token:
@@ -170,7 +174,8 @@ class GarageTask(Task):
             )
         )
         self.console.print(
-            f"[green]Initialized Garage cluster layout with node '{node.id[:16]}...' in zone '{self.layout_zone}'.[/green]"
+            f"[green]Initialized Garage cluster layout with node '{node.id[:16]}...'"
+            f" in zone '{self.layout_zone}'.[/green]"
         )
 
     def _update_dotenv(self, env_path: Path, updates: dict[str, str]) -> None:

@@ -1,3 +1,4 @@
+import itertools
 from enum import StrEnum
 from ipaddress import IPv4Address, IPv6Address
 from pathlib import Path
@@ -18,6 +19,7 @@ EntityName = Annotated[
     StringConstraints(pattern=r"^[a-z][a-z0-9-]*$", min_length=1, max_length=63),
 ]
 KeyBits = Literal[2048, 3072, 4096]
+MAX_DNS_LABEL_LENGTH: int = 63
 
 
 class StrictConfigModel(BaseModel):
@@ -53,7 +55,7 @@ class SubjectAlternativeNamesConfig(StrictConfigModel):
             labels = candidate.removesuffix(".").split(".")
             if any(
                 not label
-                or len(label) > 63
+                or len(label) > MAX_DNS_LABEL_LENGTH
                 or label.startswith("-")
                 or label.endswith("-")
                 or not label.replace("-", "").isalnum()
@@ -141,12 +143,11 @@ class PkiConfig(StrictConfigModel):
             raise ValueError(
                 "PKI configuration must contain at least one root authority"
             )
-        shortest_validity = min(
-            authority.validity_days for authority in self.authorities
-        )
-        shortest_validity = min(
-            shortest_validity,
-            min(certificate.validity_days for certificate in self.certificates),
+        shortest_validity: int = min(
+            itertools.chain(
+                (authority.validity_days for authority in self.authorities),
+                (certificate.validity_days for certificate in self.certificates),
+            )
         )
         if self.renew_before_days >= shortest_validity:
             raise ValueError(

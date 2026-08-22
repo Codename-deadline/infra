@@ -3,6 +3,7 @@ from typing import Literal
 import typer
 from dotenv import load_dotenv
 from rich.console import Console
+
 from src.configs.dev_config import DevConfig
 from src.configs.prod_config import ProdConfig
 from src.configs.setup_config import Config
@@ -52,7 +53,7 @@ def get_configs() -> tuple[Config, AppConfig]:
 def main(
     env: str = typer.Option("dev", help="Environment config to load (dev/prod)"),
 ):
-    global setup_config, app_config, environment
+    global setup_config, app_config, environment  # noqa: PLW0603
 
     if env not in ("prod", "dev"):
         raise typer.BadParameter("Environment must be prod or dev")

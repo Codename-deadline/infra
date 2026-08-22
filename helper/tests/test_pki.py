@@ -8,6 +8,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.x509.oid import ExtendedKeyUsageOID
 from pydantic import ValidationError
+
 from src.configs.pki_config import (
     CertificateAuthorityConfig,
     CertificateConfig,

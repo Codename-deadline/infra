@@ -9,10 +9,11 @@ RUN addgroup -g $GID $USER && \
 
 WORKDIR /setup
 RUN apk add --no-cache git
+COPY --from=ghcr.io/astral-sh/uv:0.12.5 /uv /uvx /bin/
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev
 COPY src src
 
 USER $USER
-ENTRYPOINT ["python3", "-m", "src.main"]
+ENTRYPOINT ["uv", "run", "--no-sync", "-m", "src.main"]

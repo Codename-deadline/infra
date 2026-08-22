@@ -7,6 +7,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import pkcs12
+
 from src.configs.pki_config import CertificateConfig, EntityName, PkiConfig
 from src.tasks.pki.constants import (
     ENCRYPTED_STORE_MODE,
@@ -86,7 +87,7 @@ class PkiValidationService:
             )
 
     def _validate_layout(self, output_directory: Path) -> None:
-        """Check every configured artifact exists, is not a symlink, and has its mode."""
+        """Check every configured artifact exists, isn't a symlink, and has its mode."""
 
         self._validate_directory(output_directory, ENTITY_DIRECTORY_MODE)
         self._validate_directory(

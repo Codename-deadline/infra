@@ -4,6 +4,7 @@ from typing import final
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+
 from src.configs.pki_config import (
     CertificateAuthorityConfig,
     EntityName,

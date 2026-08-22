@@ -1,0 +1,53 @@
+[project]
+name = "deadlines-infra-helper"
+version = "0.1.0"
+description = "Deadlines infrastructure helper"
+requires-python = "~=3.14.0"
+dependencies = [
+    "asyncpg>=0.31.0,<0.32.0",
+    "cryptography>=50.0.0,<51.0.0",
+    "garage-admin-sdk",
+    "kafka-python>=3.0.11,<4.0.0",
+    "pydantic>=2.13.4,<3.0.0",
+    "pydantic-settings>=2.15.0,<3.0.0",
+    "python-dotenv>=1.2.3,<2.0.0",
+    "pyyaml>=6.0.3,<7.0.0",
+    "typer>=0.27.1,<0.28.0",
+]
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.10,<2.0.0",
+    "prek>=0.4.14,<0.5.0",
+    "ruff>=0.16.4,<0.17.0",
+]
+
+[tool.uv]
+package = false
+add-bounds = "major"
+
+[tool.uv.sources]
+garage-admin-sdk = { git = "https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python", rev = "709b9c1317e68b9f4ea5025ef8fa9df0d2ce899c" }
+
+[tool.ruff]
+target-version = "py314"
+exclude = [
+    "common/infrastructure/grpc/generated",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "PL",
+    "UP",
+]
+
+[tool.basedpyright]
+pythonVersion = "3.14"
+typeCheckingMode = "standard"
+include = [
+    "src",
+    "tests",
+]

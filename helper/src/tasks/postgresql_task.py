@@ -3,6 +3,7 @@ import os
 import sys
 
 from rich.console import Console
+
 from src.configs.dev_config import DevConfig
 from src.configs.prod_config import ProdConfig
 from src.configs.setup_config import Config
@@ -27,7 +28,7 @@ class PostgreSQLTask(Task):
         asyncio.run(self._register_bots())
 
     async def _register_bots(self) -> None:
-        import asyncpg
+        import asyncpg  # noqa: PLC0415
 
         connection = None
 
@@ -43,7 +44,8 @@ class PostgreSQLTask(Task):
                 break
             except Exception:
                 self.console.print(
-                    f"[red][ERROR]: Failed to connect to db {i + 1}/{RETRIES_CNT}. Retrying in {RETRIES_INTERVAL} seconds...[/red]"
+                    f"[red][ERROR]: Failed to connect to db {i + 1}/{RETRIES_CNT}."
+                    f" Retrying in {RETRIES_INTERVAL} seconds...[/red]"
                 )
                 if i == RETRIES_CNT - 1:
                     break
@@ -70,7 +72,8 @@ class PostgreSQLTask(Task):
                         bot_username,
                     )
                     self.console.print(
-                        f"[green]Registered @{bot_username}. Messenger: {bot.messenger.name.capitalize()}[/green]"
+                        f"[green]Registered @{bot_username}. Messenger:"
+                        f" {bot.messenger.name.capitalize()}[/green]"
                     )
                 except asyncpg.exceptions.UniqueViolationError:
                     self.console.print(
@@ -78,7 +81,8 @@ class PostgreSQLTask(Task):
                     )
         except asyncpg.exceptions.UndefinedTableError:
             self.console.print(
-                "[red][ERROR]: Table 'bots' does not exist. Start api first to create it[/red]"
+                "[red][ERROR]: Table 'bots' does not exist."
+                " Start api first to create it[/red]"
             )
 
         await connection.close()

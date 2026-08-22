@@ -4,12 +4,12 @@ import re
 import secrets
 from dataclasses import dataclass
 from enum import StrEnum
-from multiprocessing import Value
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 from rich.console import Console
+
 from src.configs.dev_config import DevConfig
 from src.configs.prod_config import ProdConfig
 from src.configs.setup_config import Config
@@ -97,9 +97,10 @@ class EnvGenerationTask(Task):
         namespace: str = match.group(1)
         if not is_production_env(self.env) and namespace.startswith("PROD_"):
             raise ValueError(
-                f'Environment mismatch. Located production variable: "{match}" while in a non prod environment ({self.env})'
+                f'Environment mismatch. Located production variable: "{match}"'
+                f" while in a non prod environment ({self.env})"
             )
-        namespace = namespace.split("_")[-1]
+        namespace = namespace.rsplit("_", maxsplit=1)[-1]
 
         path: str = match.group(2)
         allowed_path: str = f"{namespace}.{path}"
@@ -110,7 +111,8 @@ class EnvGenerationTask(Task):
         try:
             if namespace == "APP":
                 if path == "public_host":
-                    value = urlparse(str(self.app_config.app.public_url)).hostname
+                    public_url = getattr(self.app_config.app, "public_url")
+                    value = urlparse(str(public_url)).hostname
                     if value is None:
                         raise ValueError(
                             f"Unable to resolve config placeholder: {match.group(0)}"

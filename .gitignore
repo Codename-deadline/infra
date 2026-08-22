@@ -14,3 +14,4 @@ generated/pki/
 
 config-dev.yaml
 config-prod.yaml
+setup-config.yaml

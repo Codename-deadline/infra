@@ -1,0 +1,47 @@
+name: "Infra: Build and test"
+
+on:
+  push:
+    paths:
+      - "helper/**"
+      - ".github/workflows/build-and-test.yaml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: helper
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: "recursive"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.5"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --dev
+
+      - name: Run formatter
+        run: uv run ruff format --check
+
+      - name: Run linter
+        run: uv run ruff check
+
+      - name: Perform type check
+        run: uv run basedpyright
+
+      - name: Ensure valid Python code
+        run: uv run python -c "import src.main"
+
+      - name: Run tests
+        run: uv run -m tests.test_pki

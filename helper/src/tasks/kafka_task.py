@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal, override
 
 from rich.console import Console
+
 from src.configs.setup_config import Config
 from src.constants import GENERATED_DIR
 from src.utils import is_production_env
@@ -26,11 +27,11 @@ class KafkaTask(Task):
 
     @override
     def execute(self) -> None:
-        import kafka
-        from kafka.admin import NewTopic
+        import kafka  # noqa: PLC0415
+        from kafka.admin import NewTopic  # noqa: PLC0415
 
         container_name: str = self.config.containers.kafka
-        kafka_port: int = int(os.getenv("KAFKA_PORT", 9092))
+        kafka_port: int = int(os.getenv("KAFKA_PORT", "9092"))
         bootstrap_servers = f"{container_name}:{kafka_port}"
         if is_production_env(self.environment):
             kafka_client = kafka.KafkaAdminClient(
