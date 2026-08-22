@@ -78,7 +78,9 @@ services:
     image: deadlines-setup
     build: ../helper
     volumes:
-      - ../configs:/setup/configs:ro,Z
+      - ../configs:/setup/configs:rw,Z
+      - ../configs/templates:/setup/configs/templates:ro,Z
+      - ../configs/garage.toml:/setup/configs/garage.toml:ro,Z
       - ../common/.env-template:/setup/.env-template:ro,Z
       - ../generated:/setup/generated:rw,z
 

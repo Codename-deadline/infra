@@ -1,3 +1,4 @@
+import shutil
 from typing import Literal
 
 import typer
@@ -7,7 +8,12 @@ from rich.console import Console
 from src.configs.dev_config import DevConfig
 from src.configs.prod_config import ProdConfig
 from src.configs.setup_config import Config
-from src.constants import DEV_CONFIG_PATH, PROD_CONFIG_PATH, SETUP_CONFIG_PATH
+from src.constants import (
+    DEV_CONFIG_PATH,
+    PROD_CONFIG_PATH,
+    SETUP_CONFIG_PATH,
+    SETUP_CONFIG_TEMPLATE_PATH,
+)
 from src.tasks.env_generation_task import EnvGenerationTask
 from src.tasks.garage_task import GarageTask
 from src.tasks.kafka_task import KafkaTask
@@ -62,9 +68,7 @@ def main(
     load_dotenv(dotenv_path=resolve_dotenv_path(env))
     try:
         if not SETUP_CONFIG_PATH.exists():
-            raise typer.BadParameter(
-                f"Setup config is missing: expected {SETUP_CONFIG_PATH}"
-            )
+            shutil.copy(SETUP_CONFIG_TEMPLATE_PATH, SETUP_CONFIG_PATH)
         setup_config = Config.load()
         app_config = load_app_config(env)
     except Exception as e:
