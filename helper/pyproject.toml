@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Deadlines infrastructure helper"
 requires-python = "~=3.14.0"
 dependencies = [
-    "asyncpg>=0.31.0,<0.32.0",
+    "asyncpg>=0.32.0,<0.33.0",
     "cryptography>=50.0.0,<51.0.0",
     "garage-admin-sdk",
     "kafka-python>=3.0.11,<4.0.0",
