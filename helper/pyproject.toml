@@ -19,7 +19,7 @@ dependencies = [
 dev = [
     "basedpyright>=1.39.10,<2.0.0",
     "prek>=0.5.0,<0.6.0",
-    "ruff>=0.16.4,<0.17.0",
+    "ruff>=0.17.3,<0.18.0",
 ]
 
 [tool.uv]
@@ -31,23 +31,12 @@ garage-admin-sdk = { git = "https://git.deuxfleurs.fr/garage-sdk/garage-admin-sd
 
 [tool.ruff]
 target-version = "py314"
-exclude = [
-    "common/infrastructure/grpc/generated",
-]
+exclude = ["common/infrastructure/grpc/generated"]
 
 [tool.ruff.lint]
-select = [
-    "E",
-    "F",
-    "I",
-    "PL",
-    "UP",
-]
+select = ["E", "F", "I", "PL", "UP"]
 
 [tool.basedpyright]
 pythonVersion = "3.14"
 typeCheckingMode = "standard"
-include = [
-    "src",
-    "tests",
-]
+include = ["src", "tests"]

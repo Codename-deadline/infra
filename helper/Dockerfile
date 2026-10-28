@@ -9,7 +9,7 @@ RUN addgroup -g $GID $USER && \
 
 WORKDIR /setup
 RUN apk add --no-cache git
-COPY --from=ghcr.io/astral-sh/uv:0.12.15 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /uvx /bin/
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev
