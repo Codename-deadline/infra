@@ -2,7 +2,7 @@
 name = "deadlines-infra-helper"
 version = "0.1.0"
 description = "Deadlines infrastructure helper"
-requires-python = "~=3.14.0"
+requires-python = ">=3.14,<3.15"
 dependencies = [
     "asyncpg>=0.32.0,<0.33.0",
     "cryptography>=50.0.0,<51.0.0",
@@ -12,7 +12,7 @@ dependencies = [
     "pydantic-settings>=2.15.0,<3.0.0",
     "python-dotenv>=1.2.3,<2.0.0",
     "pyyaml>=6.0.3,<7.0.0",
-    "typer>=0.27.1,<0.28.0",
+    "typer>=0.29.2,<0.30.0",
 ]
 
 [dependency-groups]
